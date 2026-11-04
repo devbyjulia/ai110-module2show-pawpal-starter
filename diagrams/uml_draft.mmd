@@ -1,0 +1,48 @@
+classDiagram
+    %% Draft UML for PawPal+. Update diagrams/uml.mmd once the implementation is final.
+
+    class Owner {
+        +str name
+        +int available_minutes = 60
+        +list~str~ preferences
+        +list~Pet~ pets
+        +add_pet(pet: Pet) None
+        +get_all_tasks() list~Task~
+    }
+
+    class Pet {
+        +str name
+        +str species
+        +list~Task~ tasks
+        +add_task(task: Task) None
+        +edit_task(task: Task, **changes) None
+        +remove_task(task: Task) None
+    }
+
+    class Task {
+        +str description
+        +int duration_minutes
+        +str time = ""
+        +str priority = "medium"
+        +str frequency = "daily"
+        +bool completed = False
+        +date|None last_completed = None
+        +str pet_name = ""
+        +__post_init__() None
+        +mark_complete(on: date|None = None) None
+        +is_due_today(today: date|None = None) bool
+    }
+
+    class Scheduler {
+        +Owner owner
+        +list~Task~ plan
+        +list~Task~ skipped
+        +generate_plan(today: date|None = None) list~Task~
+        +sort_by_priority(tasks: list~Task~) list~Task~
+        +explain_plan() str
+    }
+
+    Owner "1" o-- "0..*" Pet : owns
+    Pet "1" *-- "0..*" Task : has
+    Scheduler --> "1" Owner : plans for
+    Scheduler --> "0..*" Task : plan / skipped

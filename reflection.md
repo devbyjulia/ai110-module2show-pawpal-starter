@@ -5,12 +5,19 @@
 **a. Initial design**
 
 - Briefly describe your initial UML design.
+Three core actions for PawPal+ are entering a pet, adding or editing care tasks with a duration and priority, and generating a daily plan.
 - What classes did you include, and what responsibilities did you assign to each?
+The classes included are Owner, Pet, Task and Scheduler. Owner retrieves all pet tasks and assigns the owner name, available time, and pets.
+Pet assigns pet name, species, and tasks. Task contains a description, duration, priority, frequency, and completion status.
+Scheduler generates a plan for the owner's pets, sorts tasks by priority, and explains the rationale for the plan.
 
 **b. Design changes**
 
 - Did your design change during implementation?
 - If yes, describe at least one change and why you made it.
+Yes, my design changed. I added an extra attribute to the Task class called ```pet_name```.
+This is a string that indicates what pet the task refers to.
+Without it, the user may not know which task applies to which pet when all the tasks are collected into a single list.
 
 ---
 
