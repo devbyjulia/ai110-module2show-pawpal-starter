@@ -1,4 +1,5 @@
 import streamlit as st
+from pawpal_system import Owner, Task, Pet, Scheduler
 
 st.set_page_config(page_title="PawPal+", page_icon="🐾", layout="centered")
 
@@ -38,35 +39,73 @@ At minimum, your system should:
 
 st.divider()
 
-st.subheader("Quick Demo Inputs (UI only)")
-owner_name = st.text_input("Owner name", value="Jordan")
-pet_name = st.text_input("Pet name", value="Mochi")
-species = st.selectbox("Species", ["dog", "cat", "other"])
+st.subheader("Add Owner and Pets")
+owner_name = st.text_input("Enter your name", placeholder="Julia")
+
+if "owner" not in st.session_state:
+    st.session_state.owner = Owner(owner_name)
+owner = st.session_state.owner
+
+owner.name = owner_name
+
+pet_name = st.text_input("Enter pet name", placeholder="Smudge")
+species = st.text_input("Enter pet species", placeholder="cat")
+if st.button("Add pet"):
+    owner.add_pet(Pet(pet_name, species))
+
 
 st.markdown("### Tasks")
-st.caption("Add a few tasks. In your final version, these should feed into your scheduler.")
+st.caption("Add care tasks for each pet. These feed into the scheduler below.")
 
-if "tasks" not in st.session_state:
-    st.session_state.tasks = []
-
-col1, col2, col3 = st.columns(3)
-with col1:
-    task_title = st.text_input("Task title", value="Morning walk")
-with col2:
-    duration = st.number_input("Duration (minutes)", min_value=1, max_value=240, value=20)
-with col3:
-    priority = st.selectbox("Priority", ["low", "medium", "high"], index=2)
-
-if st.button("Add task"):
-    st.session_state.tasks.append(
-        {"title": task_title, "duration_minutes": int(duration), "priority": priority}
-    )
-
-if st.session_state.tasks:
-    st.write("Current tasks:")
-    st.table(st.session_state.tasks)
+if not owner.pets:
+    st.info("Add a pet above before adding tasks.")
 else:
-    st.info("No tasks yet. Add one above.")
+    pet_names = [p.name for p in owner.pets]
+    chosen_pet = st.selectbox("For which pet?", pet_names)
+    pet = owner.pets[pet_names.index(chosen_pet)]
+
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        task_title = st.text_input("Task title", value="Morning walk")
+    with col2:
+        duration = st.number_input("Duration (minutes)", min_value=1, max_value=240, value=20)
+    with col3:
+        priority = st.selectbox("Priority", ["low", "medium", "high"], index=2)
+
+    if st.button("Add task"):
+        try:
+            pet.add_task(Task(task_title, int(duration), priority=priority))
+        except ValueError as e:
+            st.error(str(e))
+
+    if owner.get_all_tasks():
+        st.write("Current tasks:")
+        filter_col1, filter_col2 = st.columns(2)
+        with filter_col1:
+            pet_filter = st.selectbox("Show pet", ["All"] + pet_names)
+        with filter_col2:
+            status_filter = st.selectbox("Show status", ["All", "Pending", "Done"])
+
+        filtered_tasks = owner.filter_tasks(
+            pet_name=None if pet_filter == "All" else pet_filter,
+            completed={"All": None, "Pending": False, "Done": True}[status_filter],
+        )
+        if filtered_tasks:
+            st.table([
+                {
+                    "Pet": t.pet_name,
+                    "Task": t.description,
+                    "Minutes": t.duration_minutes,
+                    "Priority": t.priority,
+                    "Frequency": t.frequency,
+                    "Status": "Done" if t.completed else "Pending",
+                }
+                for t in filtered_tasks
+            ])
+        else:
+            st.info("No tasks match these filters.")
+    else:
+        st.info("No tasks yet. Add one above.")
 
 st.divider()
 

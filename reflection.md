@@ -31,7 +31,17 @@ Without it, the user may not know which task applies to which pet when all the t
 **b. Tradeoffs**
 
 - Describe one tradeoff your scheduler makes.
+My conflict detection (`Scheduler.detect_conflicts`) only flags tasks that start at exactly the same time.
+It does not check whether task durations overlap. For example, a 30-minute walk at 08:30 and a feeding at 08:45
+overlap in real life, but the scheduler will not warn about them because their start times are different.
+The check groups tasks by start time in a dictionary, so it only needs one pass over the plan, and it returns
+warning messages instead of raising errors, so a conflict never crashes the app.
 - Why is that tradeoff reasonable for this scenario?
+Most pet care tasks are short (feeding, meds, brushing) and owners usually think in terms of "what happens at 8:30",
+so two tasks booked for the same start time is the most common and most obvious mistake to catch.
+Keeping the check simple made it easy to understand, test, and explain. The cost is that it can miss real
+conflicts between longer tasks. If I needed to catch those, the upgrade is small: sort the plan by start time,
+keep track of when the latest task ends, and warn if the next task starts before that.
 
 ---
 
