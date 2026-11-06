@@ -56,19 +56,48 @@ Today's schedule for Julia:
 
 ## 🧪 Testing PawPal+
 
+With the virtual environment activated (see [Setup](#setup)), run from the project root:
+
 ```bash
 # Run the full test suite:
-pytest
+python -m pytest
 
-# Run with coverage:
-pytest --cov
+# Show each test name as it runs:
+python -m pytest -v
+
+# Run only tests whose names match a keyword:
+python -m pytest -k conflict
 ```
+
+`pytest.ini` points pytest at the `tests/` folder and adds the project root to the import path, so no extra flags are needed.
 
 Sample test output:
 
 ```
-# Paste your pytest output here
+============================= test session starts =============================
+collected 35 items
+
+tests\test_pawpal.py ...................................                 [100%]
+
+============================= 35 passed in 0.05s ==============================
 ```
+
+### What the tests cover
+
+All tests are in `tests/test_pawpal.py` and use fixed dates, so results don't depend on the day they're run.
+
+| Area | Happy path | Edge cases |
+|------|------------|------------|
+| Task basics | Adding tasks to a pet; marking a task complete | Rejects invalid times such as `8:30`, `24:00` and `noon`; a failed `edit_task` leaves the task unchanged |
+| Sorting | Tasks given out of order come back in start-time order | Tasks at the same time are ordered by priority; tasks with no time go last |
+| Plan generation | Due tasks are picked and listed in start-time order | When time is tight, high-priority tasks are kept and lower ones skipped; completed and not-yet-due tasks are left out |
+| Filtering | Filtering by pet, by completion status, or both | An unknown pet name returns an empty list; a new recurring occurrence shows up as pending |
+| Recurring tasks | Daily tasks repeat in 1 day, weekly in 7 | Rolling over the end of a month; completing a task twice raises an error; a new occurrence isn't due until its date, and overdue tasks still appear |
+| Conflict detection | Warnings for a clash within one pet and across pets | A three-way clash gives one warning; different times, untimed tasks and completed tasks are ignored |
+| Duplicate tasks | Two identical-looking tasks are both planned and flagged as a conflict | Removing, editing or completing a task affects only that exact task, and a lookalike task that was never added is rejected |
+
+### Confidence level
+ ★ ★ ★ ★ ★
 
 ## 📐 Smarter Scheduling
 

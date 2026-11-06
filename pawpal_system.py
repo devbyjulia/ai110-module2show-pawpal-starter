@@ -8,7 +8,7 @@ RECURRENCE_DAYS = {"daily": 1, "weekly": 7}
 TIME_PATTERN = re.compile(r"([01]\d|2[0-3]):[0-5]\d")  # zero-padded 24-hour "HH:MM"
 
 
-@dataclass
+@dataclass(eq=False)  # compare by identity so duplicate-looking tasks stay distinct
 class Task:
     """A single pet care task, e.g. a walk or feeding."""
     description: str
