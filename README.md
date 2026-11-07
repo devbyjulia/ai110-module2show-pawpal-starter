@@ -1,6 +1,6 @@
 # PawPal+ (Module 2 Project)
 
-You are building **PawPal+**, a Streamlit app that helps a pet owner plan care tasks for their pet.
+**PawPal+** is a Streamlit app that helps a pet owner plan care tasks for their pet.
 
 ## Scenario
 
@@ -150,12 +150,85 @@ PawPal+ goes beyond a plain task list with four scheduling features. All of them
 
 ## 📸 Demo Walkthrough
 
-Describe your app in numbered steps so a reader can follow along without watching a video:
+Start the app from the project root with:
 
-1. <!-- Describe this step -->
-2. <!-- Describe this step -->
-3. <!-- Describe this step -->
-4. <!-- Describe this step -->
-5. <!-- Add more steps as needed -->
+```bash
+streamlit run app.py
+```
 
-**Screenshot or video** *(optional)*: <!-- Insert a screenshot or link to a demo video here -->
+### Main UI features
+
+The app is one page with three sections, from top to bottom.
+
+| Section | What you can do |
+|---------|-----------------|
+| **Add Owner and Pets** | Enter your name and how many minutes you have for pet care today (default 60). Add pets by name and species. |
+| **Tasks** | Pick a pet and add a task with a title, duration, priority, optional start time (`HH:MM`) and frequency (daily or weekly). View all tasks in a table sorted by start time and filter it by pet and status. See conflict warnings as soon as two pending tasks share a start time. Mark a task that's due today as complete. |
+| **Build Schedule** | Click **Generate schedule** to see today's plan, any conflicts in it, any tasks that didn't fit, and a "Why this plan?" explanation. |
+
+Invalid input, such as a start time of `8:30` or `noon`, shows an error message instead of crashing the app. Data is kept in Streamlit's session state, so it lasts until you close or refresh the browser tab.
+
+### Example workflow
+
+1. **Set up the owner.** Enter `Julia` as your name and leave available time at **60 minutes**.
+2. **Add pets.** Add `Zack` (dog), then `Smudge` (cat).
+3. **Add tasks.** Choose a pet in "For which pet?" and add:
+
+   | Pet | Task | Minutes | Priority | Start time |
+   |-----|------|---------|----------|------------|
+   | Zack | Morning walk | 30 | high | 08:30 |
+   | Zack | Give meds | 5 | high | 08:30 |
+   | Zack | Brush Zack | 15 | low | 09:00 |
+   | Smudge | Feed Smudge | 5 | high | 09:00 |
+   | Smudge | Play with Smudge | 20 | medium | *(blank)* |
+
+   Each task shows a green "Added …" confirmation. The task table lists them in start-time order, with "Play with Smudge" last as **Anytime**.
+4. **Check early conflict warnings.** Under the table, two warnings appear before any schedule is built:
+   ```
+   ⚠️ Conflict at 08:30 for Zack: Morning walk (Zack), Give meds (Zack)
+   ⚠️ Conflict at 09:00 across pets: Brush Zack (Zack), Feed Smudge (Smudge)
+   ```
+   A tip below them suggests moving one task or leaving its time blank.
+5. **Try the filters.** Set "Show pet" to `Smudge` to see only Smudge's two tasks, or set "Show status" to `Done` to see completed tasks (none yet).
+6. **Generate today's schedule.** Click **Generate schedule**. The five tasks need 75 minutes, but only 60 are available:
+   - A success banner reads **"Scheduled 4 task(s) using 60 of 60 minutes."**
+   - The plan table shows, in order: Give meds (08:30), Morning walk (08:30), Feed Smudge (09:00), Play with Smudge (Anytime).
+   - A warning flags the 08:30 clash that is still in the plan.
+   - A second warning says **1 task was skipped**: Brush Zack (low priority, 15 min) didn't fit after the higher-priority tasks were chosen.
+   - Opening **"Why this plan?"** shows the scheduler's explanation for each chosen and skipped task.
+7. **Mark a task complete.** In "Mark a task complete", choose `08:30 · Morning walk (Zack)` and click **✅ Mark complete**. A message confirms it's done and says when the next daily walk is due (tomorrow). The table now shows the walk as ✅ Done, plus a new pending walk for tomorrow.
+8. **Regenerate.** Click **Generate schedule** again. The finished walk and tomorrow's walk are both left out, which frees 30 minutes, so Brush Zack now fits and all four remaining tasks are planned. A new warning appears because Feed Smudge and Brush Zack now share 09:00 in the plan.
+
+### Key Scheduler behaviors shown
+
+| Behavior | Where you see it | Method |
+|----------|------------------|--------|
+| **Priority decides what fits** | Brush Zack (low) is skipped while all high-priority tasks are kept | `Scheduler.generate_plan()`, `sort_by_priority()` |
+| **Time decides the order** | The plan and task table read like a day, with untimed tasks last and ties at the same time broken by priority | `Scheduler.sort_by_time()` |
+| **Conflict warnings** | Yellow ⚠️ warnings under the task table and the plan, naming the time, the pet(s) and the tasks | `Scheduler.detect_conflicts()` |
+| **Time budget** | The success banner shows minutes used out of minutes available, and skipped tasks are listed with a suggestion | `Scheduler.generate_plan()`, `Scheduler.skipped` |
+| **Filtering** | "Show pet" and "Show status" dropdowns | `Owner.filter_tasks()` |
+| **Recurring tasks** | Completing a task adds its next occurrence, which isn't scheduled until its due date | `Pet.complete_task()`, `Task.is_due_today()` |
+| **Explanation** | The "Why this plan?" expander | `Scheduler.explain_plan()` |
+
+### Sample CLI output from running main.py
+```
+Today's schedule for Julia:
+  08:30    Take Zack for a walk   Zack       5 min  [high]
+  08:45    Feed Zack              Zack       3 min  [high]
+  09:00    Feed Smudge            Smudge     3 min  [high]
+  09:30    Play with Smudge       Smudge    10 min  [medium]
+
+Tasks out of order:
+  13:30    Clean Goldie's tank    Goldie    25 min  [high]
+  08:30    Feed Goldie            Goldie     2 min  [high]
+
+Sorted tasks for Gary:
+  08:30    Feed Goldie            Goldie     2 min  [high]
+  13:30    Clean Goldie's tank    Goldie    25 min  [high]
+
+Conflicting task:
+  13:30    Photoshoot with Goldie Goldie    25 min  [high]
+
+Conflict warnings:  ["Conflict at 13:30 for Goldie: Clean Goldie's tank (Goldie), Photoshoot with Goldie (Goldie)"]
+```
